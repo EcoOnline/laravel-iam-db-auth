@@ -7,7 +7,6 @@ use Illuminate\Database\Connectors\MySqlConnector as DefaultMySqlConnector;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use InvalidArgumentException;
 use PDO;
 use EcoOnline\DBAuth\Auth\RDSTokenProvider;
 
@@ -19,28 +18,17 @@ class MySqlConnector extends DefaultMySqlConnector
      * @param  string  $dsn
      * @param  array  $config
      * @param  array  $options
-     *
      * @return PDO
-     *
-     * @throws InvalidArgumentException when aws profile is not supplied
      */
     public function createConnection($dsn, array $config, array $options)
     {
-        if (!(Arr::has($config, 'use_iam_auth')) || !(Arr::get($config, 'use_iam_auth'))) {
+        if (!Arr::get($config, 'use_iam_auth', false)) {
             return parent::createConnection($dsn, $config, $options);
         }
 
-        [$username] = [
-            Arr::get($config, 'username'),
-        ];
-
-        /*
-        if (!(Arr::has($config, 'aws_profile'))) {
-            throw new InvalidArgumentException('An AWS Profile must be specified.');
-        }
-        */
-
+        $username = Arr::get($config, 'username');
         $token_provider = new RDSTokenProvider($config);
+        
         try {
             $password = $token_provider->getToken();
 
@@ -69,16 +57,11 @@ class MySqlConnector extends DefaultMySqlConnector
      * @param  string  $password
      * @param  array   $options
      * @return PDO
-     *
      * @throws Exception
      */
     protected function tryAgainIfCausedByLostConnectionOrBadToken(Exception $e, $dsn, $username, $password, $options)
     {
-        if ($this->causedByLostConnection($e)) {
-            return $this->createPdoConnection($dsn, $username, $password, $options);
-        }
-
-        if ($this->causedByLostConnectionOrBadToken($e)) {
+        if ($this->causedByLostConnection($e) || $this->causedByLostConnectionOrBadToken($e)) {
             return $this->createPdoConnection($dsn, $username, $password, $options);
         }
 
