@@ -14,36 +14,70 @@ class IamDatabaseConnectorProvider extends ServiceProvider
      *
      * @return void
      */
-    public function register()
+    public function register(): void
     {
-        $connections = Config::get('database.connections');
+        $connections = Config::get('database.connections', []);
+        
         foreach ($connections as $key => $connection) {
-            if (Arr::has($connection, 'use_iam_auth') && Arr::get($connection, 'use_iam_auth')) {
-                switch (Arr::get($connection, 'driver')) {
-                    case "mysql":
-                        $this->app->bind('db.connector.mysql', \EcoOnline\DBAuth\Database\MySqlConnector::class);
-                        break;
-                    case "pgsql":
-                        $sslMode = Config::get('database.connections.'.$key.'.sslmode', 'verify-full');
-                        Config::set('database.connections.'.$key.'.sslmode', $sslMode);
-
-                        $certPath = Config::get(
-                            'database.connections.'.$key.'.sslrootcert',
-                            realpath(base_path('vendor/ecoonline/laravel-iam-db-auth/certs/global-bundle.pem'))
-                        );
-
-                        switch (PHP_OS) {
-                            case 'WINNT':
-                                $certPath = str_replace('\\', '\\\\\\\\', $certPath);
-                                break;
-                        }
-                        Config::set('database.connections.'.$key.'.sslrootcert', "'{$certPath}'");
-
-                        $this->app->bind('db.connector.pgsql', \EcoOnline\DBAuth\Database\PostgresConnector::class);
-
-                        break;
-                }
+            if (!Arr::get($connection, 'use_iam_auth', false)) {
+                continue;
             }
+
+            $driver = Arr::get($connection, 'driver');
+            
+            match ($driver) {
+                'mysql' => $this->registerMySqlConnector(),
+                'pgsql' => $this->registerPostgresConnector($key),
+                default => null,
+            };
         }
+    }
+
+    /**
+     * Register the MySQL IAM connector.
+     *
+     * @return void
+     */
+    protected function registerMySqlConnector(): void
+    {
+        $this->app->bind('db.connector.mysql', \EcoOnline\DBAuth\Database\MySqlConnector::class);
+    }
+
+    /**
+     * Register the PostgreSQL IAM connector and configure SSL settings.
+     *
+     * @param  string  $connectionName
+     * @return void
+     */
+    protected function registerPostgresConnector(string $connectionName): void
+    {
+        $this->configurePostgresSsl($connectionName);
+        $this->app->bind('db.connector.pgsql', \EcoOnline\DBAuth\Database\PostgresConnector::class);
+    }
+
+    /**
+     * Configure SSL settings for PostgreSQL connection.
+     *
+     * @param  string  $connectionName
+     * @return void
+     */
+    protected function configurePostgresSsl(string $connectionName): void
+    {
+        $configKey = "database.connections.{$connectionName}";
+        
+        // Set SSL mode if not already configured
+        $sslMode = Config::get("{$configKey}.sslmode", 'verify-full');
+        Config::set("{$configKey}.sslmode", $sslMode);
+
+        // Set SSL certificate path
+        $defaultCertPath = realpath(base_path('vendor/ecoonline/laravel-iam-db-auth/certs/global-bundle.pem'));
+        $certPath = Config::get("{$configKey}.sslrootcert", $defaultCertPath);
+        
+        // Windows requires escaped backslashes in the path
+        if (PHP_OS_FAMILY === 'Windows') {
+            $certPath = str_replace('\\', '\\\\\\\\', $certPath);
+        }
+        
+        Config::set("{$configKey}.sslrootcert", "'{$certPath}'");
     }
 }
