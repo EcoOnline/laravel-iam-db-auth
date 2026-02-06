@@ -68,7 +68,9 @@ class RDSTokenProvider
             Cache::forget($this->cacheKey);
         }
         
-        return Cache::remember($this->cacheKey, 10, function () {
+        $cacheTtl = config('iam-db-auth.token_cache_ttl', 10);
+        
+        return Cache::remember($this->cacheKey, $cacheTtl, function () {
             return $this->rds_auth_generator->createToken(
                 Arr::get($this->config, 'host').':'.Arr::get($this->config, 'port'),
                 Arr::get($this->config, 'aws_region'),
