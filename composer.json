@@ -1,7 +1,6 @@
 {
     "name": "ecoonline/laravel-iam-db-auth",
     "description": "AWS IAM db auth package for Laravel - EcoOnline fork with security fixes",
-    "version": "1.0.0",
     "type": "library",
     "license": "GPL-3.0-or-later",
     "authors": [
