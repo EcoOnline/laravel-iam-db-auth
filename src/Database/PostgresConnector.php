@@ -20,7 +20,7 @@ class PostgresConnector extends DefaultPostgresConnector
      * @param  array  $options
      * @return PDO
      */
-    public function createConnection($dsn, array $config, array $options)
+    public function createConnection($dsn, array $config, array $options): PDO
     {
         if (!Arr::get($config, 'use_iam_auth', false)) {
             return parent::createConnection($dsn, $config, $options);
@@ -59,8 +59,13 @@ class PostgresConnector extends DefaultPostgresConnector
      * @return PDO
      * @throws Exception
      */
-    protected function tryAgainIfCausedByLostConnectionOrBadToken(Exception $e, $dsn, $username, $password, $options)
-    {
+    protected function tryAgainIfCausedByLostConnectionOrBadToken(
+        Exception $e,
+        string $dsn,
+        string $username,
+        string $password,
+        array $options
+    ): PDO {
         if ($this->causedByLostConnection($e) || $this->causedByLostConnectionOrBadToken($e)) {
             return $this->createPdoConnection($dsn, $username, $password, $options);
         }
@@ -74,7 +79,7 @@ class PostgresConnector extends DefaultPostgresConnector
      * @param  Exception  $e
      * @return bool
      */
-    protected function causedByLostConnectionOrBadToken(Exception $e)
+    protected function causedByLostConnectionOrBadToken(Exception $e): bool
     {
         $message = $e->getMessage();
 
