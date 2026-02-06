@@ -1,6 +1,6 @@
 <?php
 
-namespace Pixelvide\DBAuth\Database;
+namespace EcoOnline\DBAuth\Database;
 
 use Exception;
 use Illuminate\Database\Connectors\MySqlConnector as DefaultMySqlConnector;
@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use PDO;
-use Pixelvide\DBAuth\Auth\RDSTokenProvider;
+use EcoOnline\DBAuth\Auth\RDSTokenProvider;
 
 class MySqlConnector extends DefaultMySqlConnector
 {
@@ -43,14 +43,16 @@ class MySqlConnector extends DefaultMySqlConnector
         $token_provider = new RDSTokenProvider($config);
         try {
             $password = $token_provider->getToken();
-            Log::debug('Connecting to db using IAM authentication');
 
             return $this->createPdoConnection(
                 $dsn, $username, $password, $options
             );
         } catch (Exception $e) {
+            Log::error('Failed to connect to database using IAM auth, retrying with refreshed token', [
+                'error' => $e->getMessage()
+            ]);
+            
             $password = $token_provider->getToken(true);
-            Log::debug('Connecting to db using IAM authentication');
 
             return $this->tryAgainIfCausedByLostConnectionOrBadToken(
                 $e, $dsn, $username, $password, $options

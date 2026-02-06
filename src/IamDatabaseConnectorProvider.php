@@ -1,6 +1,6 @@
 <?php
 
-namespace Pixelvide\DBAuth;
+namespace EcoOnline\DBAuth;
 
 use Illuminate\Support\Arr;
 use Illuminate\Support\ServiceProvider;
@@ -21,7 +21,7 @@ class IamDatabaseConnectorProvider extends ServiceProvider
             if (Arr::has($connection, 'use_iam_auth') && Arr::get($connection, 'use_iam_auth')) {
                 switch (Arr::get($connection, 'driver')) {
                     case "mysql":
-                        $this->app->bind('db.connector.mysql', \Pixelvide\DBAuth\Database\MySqlConnector::class);
+                        $this->app->bind('db.connector.mysql', \EcoOnline\DBAuth\Database\MySqlConnector::class);
                         break;
                     case "pgsql":
                         $sslMode = Config::get('database.connections.'.$key.'.sslmode', 'verify-full');
@@ -29,7 +29,7 @@ class IamDatabaseConnectorProvider extends ServiceProvider
 
                         $certPath = Config::get(
                             'database.connections.'.$key.'.sslrootcert',
-                            realpath(base_path('vendor/pixelvide/laravel-iam-db-auth/certs/global-bundle.pem'))
+                            realpath(base_path('vendor/ecoonline/laravel-iam-db-auth/certs/global-bundle.pem'))
                         );
 
                         switch (PHP_OS) {
@@ -39,7 +39,7 @@ class IamDatabaseConnectorProvider extends ServiceProvider
                         }
                         Config::set('database.connections.'.$key.'.sslrootcert', "'{$certPath}'");
 
-                        $this->app->bind('db.connector.pgsql', \Pixelvide\DBAuth\Database\PostgresConnector::class);
+                        $this->app->bind('db.connector.pgsql', \EcoOnline\DBAuth\Database\PostgresConnector::class);
 
                         break;
                 }

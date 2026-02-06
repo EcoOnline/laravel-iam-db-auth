@@ -1,6 +1,6 @@
 <?php
 
-namespace Pixelvide\DBAuth\Database;
+namespace EcoOnline\DBAuth\Database;
 
 use Exception;
 use Illuminate\Database\Connectors\PostgresConnector as DefaultPostgresConnector;
@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use PDO;
-use Pixelvide\DBAuth\Auth\RDSTokenProvider;
+use EcoOnline\DBAuth\Auth\RDSTokenProvider;
 
 class PostgresConnector extends DefaultPostgresConnector
 {
@@ -43,14 +43,16 @@ class PostgresConnector extends DefaultPostgresConnector
         $token_provider = new RDSTokenProvider($config);
         try {
             $password = $token_provider->getToken();
-            Log::info('Connecting to db using auth token '.$password);
 
             return $this->createPdoConnection(
                 $dsn, $username, $password, $options
             );
         } catch (Exception $e) {
+            Log::error('Failed to connect to database using IAM auth, retrying with refreshed token', [
+                'error' => $e->getMessage()
+            ]);
+            
             $password = $token_provider->getToken(true);
-            Log::info('Connecting to db using auth token '.$password);
 
             return $this->tryAgainIfCausedByLostConnectionOrBadToken(
                 $e, $dsn, $username, $password, $options

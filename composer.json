@@ -1,8 +1,8 @@
 {
-    "name": "pixelvide/laravel-iam-db-auth",
-    "description": "AWS IAM db auth package for laravel",
-    "version": "3.1.0",
-    "type": "package",
+    "name": "ecoonline/laravel-iam-db-auth",
+    "description": "AWS IAM db auth package for Laravel - EcoOnline fork with security fixes",
+    "version": "1.0.0",
+    "type": "library",
     "license": "GPL-3.0-or-later",
     "authors": [
         {
@@ -13,19 +13,19 @@
     "scripts": {},
     "require": {
         "aws/aws-sdk-php-laravel": "^3.3.0",
-        "php": ">=7.3",
+        "php": "^7.3|^8.0|^8.1|^8.2|^8.3",
         "ext-pdo": "*"
     },
     "minimum-stability": "stable",
     "autoload": {
         "psr-4": {
-            "Pixelvide\\DBAuth\\": "src/"
+            "EcoOnline\\DBAuth\\": "src/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "Pixelvide\\DBAuth\\IamDatabaseConnectorProvider"
+                "EcoOnline\\DBAuth\\IamDatabaseConnectorProvider"
             ],
             "aliases": {
             }
