@@ -5,6 +5,7 @@ namespace EcoOnline\DBAuth;
 use Illuminate\Support\Arr;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Config;
+use EcoOnline\DBAuth\Console\GetTokenCommand;
 
 class IamDatabaseConnectorProvider extends ServiceProvider
 {
@@ -18,6 +19,12 @@ class IamDatabaseConnectorProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../config/iam-db-auth.php' => config_path('iam-db-auth.php'),
         ], 'config');
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                GetTokenCommand::class,
+            ]);
+        }
     }
 
     /**
