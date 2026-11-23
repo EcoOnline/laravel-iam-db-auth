@@ -30,12 +30,12 @@ class RDSTokenProvider
      * Class constructor
      *
      * @param  array $config - AWS configuration
+     * @param  AuthTokenGenerator|null $generator - Defaults to the SDK's, on the default credential chain
      */
-    public function __construct(array $config)
+    public function __construct(array $config, ?AuthTokenGenerator $generator = null)
     {
         $this->config = $config;
-        $provider = CredentialProvider::defaultProvider();
-        $this->rds_auth_generator = new AuthTokenGenerator($provider);
+        $this->rds_auth_generator = $generator ?? new AuthTokenGenerator(CredentialProvider::defaultProvider());
         
         // Generate unique cache key per connection to avoid token conflicts
         $this->cacheKey = $this->generateCacheKey();
@@ -71,11 +71,30 @@ class RDSTokenProvider
         $cacheTtl = config('iam-db-auth.token_cache_ttl', 10);
         
         return Cache::remember($this->cacheKey, $cacheTtl, function () {
+            return $this->createTokenInUtc();
+        });
+    }
+
+    /**
+     * IAM auth tokens are always on UTC, so the application's timezone is deliberately ignored here.
+     * The SDK resolves its '+15 minutes' expiry with strtotime() in PHP's default timezone, which in a DST
+     * zone gives a 75-minute expiry for tokens signed in the hour before the clocks go back (EPC-16321).
+     *
+     * @return string - Auth token
+     */
+    private function createTokenInUtc(): string
+    {
+        $timezone = date_default_timezone_get();
+        date_default_timezone_set('UTC');
+
+        try {
             return $this->rds_auth_generator->createToken(
                 Arr::get($this->config, 'host').':'.Arr::get($this->config, 'port'),
                 Arr::get($this->config, 'aws_region'),
                 Arr::get($this->config, 'username')
             );
-        });
+        } finally {
+            date_default_timezone_set($timezone);
+        }
     }
 }
